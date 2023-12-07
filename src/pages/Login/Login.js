@@ -115,6 +115,7 @@ function Login() {
                                     value="login"
                                     className={cx('btn', 'btn--primary', 'view-cart')}
                                     onClick={handleSubmit}
+                                    disabled={!username || !password}
                                 >
                                     ĐĂNG NHẬP
                                 </button>
