@@ -1,77 +1,96 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import className from 'classnames/bind';
 import ReactPaginate from 'react-paginate';
 import styles from './TrashUsers.module.scss';
 import { useNavigate } from 'react-router-dom';
+import * as request from '~/utils/request';
 
 const cx = className.bind(styles);
 
 function TrashUsers() {
-    const token = Cookies.get('tokenAdmin');
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [checkedItems, setCheckedItems] = useState([]);
     const [pageCount, setPageCount] = useState();
-    const [currenPageProduct, setCurrenPageProduct] = useState();
+    const [currentPageProduct, setCurrentPageProduct] = useState();
 
     const postsPerPage = 10;
 
-    const handleRestoreMultipleUser = () => {
+    const handleRestoreMultipleUser = async () => {
         var dataIds = checkedItems;
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        try {
+            await request.put(`/Admin/restore-multiple-users`, dataIds);
+            getUsers(currentPageProduct || 1);
+        } catch (error) {if (error.response.status === 401) navigate('/login');}
 
-        api.put(`${process.env.REACT_APP_BASE_URL}/Admin/restore-multiple-users`, dataIds)
-            .then((res) => {
-                getUsers(currenPageProduct || 1);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.put(`${process.env.REACT_APP_BASE_URL}/Admin/restore-multiple-users`, dataIds)
+        //     .then((res) => {
+        //         getUsers(currentPageProduct || 1);
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
     };
 
-    const handleRestoreUser = (event) => {
+    const handleRestoreUser = async (event) => {
         const id = event.target.dataset.id;
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        try {
+            const res = await request.get(`/Admin/restore-user/${id}`);
+            setUsers(res.users);
+            setPageCount(res.countUser);
+        } catch (error) {if (error.response.status === 401) navigate('/login');}
 
-        api.put(`${process.env.REACT_APP_BASE_URL}/Admin/restore-user/${id}`)
-            .then((res) => {
-                setUsers(res.data.users);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.put(`${process.env.REACT_APP_BASE_URL}/Admin/restore-user/${id}`)
+        //     .then((res) => {
+        //         setUsers(res.data.users);
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
     };
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/trash-users?page=1&limit=${postsPerPage}`)
-            .then((res) => {
+        (async () => {
+            try {
+                const res = await request.get(`/Admin/trash-users?page=1&limit=${postsPerPage}`);
                 setUsers(res.data.users);
-                setPageCount(res.data.countUser);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
+                setPageCount(res.data.countUser );
+            } catch (error) { 
+                if (error.response && error.response.status === 401) { navigate('/login'); }
+            }
+        })();
+
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.get(`${process.env.REACT_APP_BASE_URL}/Admin/trash-users?page=1&limit=${postsPerPage}`)
+        //     .then((res) => {
+        //         setUsers(res.data.users);
+        //         setPageCount(res.data.countUser);
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
+    }, [navigate]);
 
     const handleChange = (event) => {
         const item = event.target.value;
@@ -97,28 +116,34 @@ function TrashUsers() {
         }
     };
 
-    const getUsers = (currenPage) => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+    const getUsers = async (currentPage) => {
+        try {
+            const res = await request.get(`/Admin/trash-users?page=${currentPage}&limit=${postsPerPage}`);
+            setUsers(res.users);
+            setPageCount(res.countUser);
+        } catch (error) {if (error.response.status === 401) navigate('/login');}
 
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/trash-users?page=${currenPage}&limit=${postsPerPage}`)
-            .then((res) => {
-                setUsers(res.data.users);
-                setPageCount(res.data.countUser);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.get(`${process.env.REACT_APP_BASE_URL}/Admin/trash-users?page=${currentPage}&limit=${postsPerPage}`)
+        //     .then((res) => {
+        //         setUsers(res.data.users);
+        //         setPageCount(res.data.countUser);
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
     };
 
     const handlePageClick = (event) => {
-        let currenPage = event.selected + 1;
-        getUsers(currenPage);
-        setCurrenPageProduct(currenPage);
+        let currentPage = event.selected + 1;
+        getUsers(currentPage);
+        setCurrentPageProduct(currentPage);
     };
 
     return (

@@ -1,20 +1,18 @@
 import React from 'react';
-import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 // import { Link } from 'react-router-dom';
 import className from 'classnames/bind';
 import styles from './Home.module.scss';
 import { Line } from 'react-chartjs-2';
-import { Chart } from 'chart.js/auto';
+// import { Chart } from 'chart.js/auto';
+import * as request from '~/utils/request';
 
 import { BankCartIcon, CartAdminIcon, OrderProcessingIcon, RoudedIcon, StackIcon, TickIcon } from '~/components/Icons';
 
 const cx = className.bind(styles);
 
 function Home() {
-    const token = Cookies.get('tokenAdmin');
     const navigate = useNavigate();
     const [allOrder, setAllOrder] = useState();
     const [processingOrder, setProcessingOrder] = useState();
@@ -58,41 +56,29 @@ function Home() {
     };
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        const fetchApi = async () => {
+            try {
+                const res = await request.get(`/Admin/get-number-order`);
+                setAllOrder(res.all);
+                setProcessingOrder(res.processing);
+                setDeliveringOrder(res.delivering);
+                setCompleteOrder(res.complete);
+            } catch (error) { if (error.response.status === 401) navigate('/login'); }
+        };
 
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-number-order`)
-            .then((res) => {
-                setAllOrder(res.data.all);
-                setProcessingOrder(res.data.processing);
-                setDeliveringOrder(res.data.delivering);
-                setCompleteOrder(res.data.complete);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
+        fetchApi();
+    }, [navigate]);
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        const fetchApi = async () => {
+            try {
+                const res = await request.get(`/Admin/order-statistics`);
+                setOrderDetailCountsPerMonth(res.orderDetailCountsPerMonth);
+            } catch (error) { if (error.response.status === 401) navigate('/login'); }
+        };
 
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/order-statistics`)
-            .then((res) => {
-                setOrderDetailCountsPerMonth(res.data.orderDetailCountsPerMonth);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
+        fetchApi();
+    }, [navigate]);
 
     return (
         <div className={cx('container_m')}>
@@ -211,10 +197,10 @@ function Home() {
                         </div>
                     </div>
                 </div>
-                <div className={cx('order-statistics')}>
+                {/* <div className={cx('order-statistics')}>
                     <p className={cx('order-statistics-title')}>Thống kê đơn hàng</p>
                     <Line data={data} options={options} />
-                </div>
+                </div> */}
             </div>
         </div>
     );

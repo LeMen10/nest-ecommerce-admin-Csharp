@@ -1,5 +1,3 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { TrashIcon } from '~/components/Icons';
@@ -9,11 +7,11 @@ import className from 'classnames/bind';
 import styles from './Users.module.scss';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import * as request from '~/utils/request';
 
 const cx = className.bind(styles);
 
 function Users() {
-    const token = Cookies.get('tokenAdmin');
     const navigate = useNavigate();
     const [users, setUsers] = useState([]);
     const [checkedItems, setCheckedItems] = useState([]);
@@ -21,13 +19,13 @@ function Users() {
     const [productIdDelete, setProductIdDelete] = useState();
     const [countDelete, setCountDelete] = useState();
     const [pageCount, setPageCount] = useState();
-    const [currenPageProduct, setCurrenPageProduct] = useState();
+    const [currentPageProduct, setCurrentPageProduct] = useState();
 
     const [checkedBtnEdit, setCheckedBtnEdit] = useState(false);
     const [checkedBtnAdd, setCheckedBtnAdd] = useState(false);
     const [userIdEdit, setUserIdEdit] = useState();
 
-    const [fullName, setfullName] = useState('');
+    const [fullName, setFullName] = useState('');
     const [username, setUsername] = useState();
     const [phone, setPhone] = useState();
     const [email, setEmail] = useState('');
@@ -45,58 +43,79 @@ function Users() {
         setProductIdDelete(targetId);
     };
 
-    const getUsers = (currenPage) => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-users?page=${currenPage}&limit=${postsPerPage}`)
-            .then((res) => {
-                setUsers(res.data.users);
-                setPageCount(res.data.countUser);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+    const getUsers = async (currentPage) => {
+        try {
+            const res = await request.get(`/Admin/get-users?page=${currentPage}&limit=${postsPerPage}`);
+            setUsers(res.users);
+            setPageCount(res.countUser);
+        } catch (error) {if (error.response.status === 401) navigate('/login');}
     };
 
+    // const getUsers = (currentPage) => {
+    //     const api = axios.create({
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //             Authorization: `Bearer ${token}`,
+    //         },
+    //     });
+
+    //     api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-users?page=${currentPage}&limit=${postsPerPage}`)
+    //         .then((res) => {
+    //             setUsers(res.data.users);
+    //             setPageCount(res.data.countUser);
+    //         })
+    //         .catch((error) => {
+    //             if (error.response.status === 401) navigate('/login');
+    //         });
+    // };
+
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-users?page=1&limit=${postsPerPage}`)
-            .then((res) => {
-                setUsers(res.data.users);
-                setPageCount(res.data.countUser);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
+        (async () => {
+            try {
+                const res = await request.get(`/Admin/get-users?page=1&limit=${postsPerPage}`);
+                setUsers(res.users);
+                setPageCount(res.countUser );
+            } catch (error) { 
+                if (error.response && error.response.status === 401) { navigate('/login'); }
+            }
+        })();
+        // const fetchApi = async () => {
+        //     try {
+        //         const res = await request.get(`/Admin/get-users?page=1&limit=${postsPerPage}`);
+        //         setUsers(res.users);
+        //         setPageCount(res.countUser);
+        //     } catch (error) { if (error.response.status === 401) navigate('/login'); }
+        // };
+        // fetchApi();
+    }, [navigate]);
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        (async () => {
+            try {
+                const res = await request.get(`/Admin/get-count-user-deleted`);
+                setCountDelete(res.count);
+            } catch (error) {
+                if (error.response && error.response.status === 401) { navigate('/login'); }
+            }
+        })();
+    }, [users, navigate]);
 
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-count-user-deleted`)
-            .then((res) => {
-                setCountDelete(res.data.count);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [users, token, navigate]);
+    // useEffect(() => {
+    //     const api = axios.create({
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //             Authorization: `Bearer ${token}`,
+    //         },
+    //     });
+
+    //     api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-count-user-deleted`)
+    //         .then((res) => {
+    //             setCountDelete(res.data.count);
+    //         })
+    //         .catch((error) => {
+    //             if (error.response.status === 401) navigate('/login');
+    //         });
+    // }, [, token, navigate]);
 
     const handleChange = (event) => {
         const item = event.target.value;
@@ -122,83 +141,123 @@ function Users() {
         }
     };
 
-    const handleDeleteUsers = () => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+    const handleDeleteUsers = async () => {
+        try {
+            await request.delete_method(`/Admin/delete-user/${productIdDelete}`);
+            setCheckedDelete(!checkedDelete);
+            getUsers(currentPageProduct || 1);
+        } catch (error) {if (error.response.status === 401) navigate('/login');}
 
-        api.delete(`${process.env.REACT_APP_BASE_URL}/Admin/delete-user/${productIdDelete}`)
-            .then((res) => {
-                setCheckedDelete(!checkedDelete);
-                getUsers(currenPageProduct || 1);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.delete(`${process.env.REACT_APP_BASE_URL}/Admin/delete-user/${productIdDelete}`)
+        //     .then((res) => {
+        //         setCheckedDelete(!checkedDelete);
+        //         getUsers(currentPageProduct || 1);
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
     };
 
-    const handleEditUser = () => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.put(`${process.env.REACT_APP_BASE_URL}/Admin/edit-user/${userIdEdit}`, {
-            fullName,
-            username,
-            phone,
-            email,
-            role,
-            city,
-            district,
-            ward,
-            specificAddress,
-        })
-            .then((res) => {
-                setCheckedBtnEdit(!checkedBtnEdit);
-                getUsers(currenPageProduct || 1);
-                setUsername(undefined);
-                setfullName(undefined);
-                setEmail(undefined);
-                setPhone(undefined);
-                setRole(undefined);
-                setCity(undefined);
-                setDistrict(undefined);
-                setWard(undefined);
-                setSpecificAddress(undefined);
-                setUserIdEdit(undefined);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
+    const handleEditUser = async () => {
+        try {
+            await request.put(`/Admin/edit-user/${userIdEdit}`, {
+                fullName,
+                username,
+                phone,
+                email,
+                role,
+                city,
+                district,
+                ward,
+                specificAddress,
             });
+            setCheckedBtnEdit(!checkedBtnEdit);
+            getUsers(currentPageProduct || 1);
+            setUsername(undefined);
+            setFullName(undefined);
+            setEmail(undefined);
+            setPhone(undefined);
+            setRole(undefined);
+            setCity(undefined);
+            setDistrict(undefined);
+            setWard(undefined);
+            setSpecificAddress(undefined);
+            setUserIdEdit(undefined);
+        } catch (error) {if (error.response.status === 401) navigate('/login');}
+
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.put(`${process.env.REACT_APP_BASE_URL}/Admin/edit-user/${userIdEdit}`, {
+        //     fullName,
+        //     username,
+        //     phone,
+        //     email,
+        //     role,
+        //     city,
+        //     district,
+        //     ward,
+        //     specificAddress,
+        // })
+        //     .then((res) => {
+        //         setCheckedBtnEdit(!checkedBtnEdit);
+        //         getUsers(currentPageProduct || 1);
+        //         setUsername(undefined);
+        //         setFullName(undefined);
+        //         setEmail(undefined);
+        //         setPhone(undefined);
+        //         setRole(undefined);
+        //         setCity(undefined);
+        //         setDistrict(undefined);
+        //         setWard(undefined);
+        //         setSpecificAddress(undefined);
+        //         setUserIdEdit(undefined);
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
     };
 
-    const handleDeleteMultipleUser = () => {
+    const handleDeleteMultipleUser = async () => {
         var dataIds = checkedItems;
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
 
-        api.delete(`${process.env.REACT_APP_BASE_URL}/Admin/delete-multiple-users`, { data: dataIds })
-            .then((res) => {
-                setCheckedDelete(!checkedDelete);
-                getUsers(currenPageProduct || 1);
-                setCheckedItems([]);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+        try {
+            await request.delete_method(`/Admin/delete-multiple-users`, { data: dataIds });
+            setCheckedDelete(!checkedDelete);
+            getUsers(currentPageProduct || 1);
+            setCheckedItems([]);
+        } catch (error) {if (error.response.status === 401) navigate('/login');}
+
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.delete(`${process.env.REACT_APP_BASE_URL}/Admin/delete-multiple-users`, { data: dataIds })
+        //     .then((res) => {
+        //         setCheckedDelete(!checkedDelete);
+        //         getUsers(currentPageProduct || 1);
+        //         setCheckedItems([]);
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
     };
 
-    const handlecheckedBtnEdit = (event) => {
+    const handleCheckedBtnEdit = (event) => {
         const targetId = event.target.dataset.id;
         setCheckedBtnEdit(!checkedBtnEdit);
         setUserIdEdit(targetId);
@@ -206,37 +265,34 @@ function Users() {
 
     useEffect(() => {
         if (userIdEdit) {
-            const api = axios.create({
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            api.get(`${process.env.REACT_APP_BASE_URL}/Admin/find-user/${userIdEdit}`)
-                .then((res) => {
-                    var user = res.data.user;
-                    setUsername(user[0].username);
-                    setfullName(user[0].fullName);
-                    setEmail(user[0].email);
-                    setPhone(user[0].phone);
-                    setRole(user[0].role);
-                    setCity(user[0].city);
-                    setDistrict(user[0].district);
-                    setWard(user[0].ward);
-                    setSpecificAddress(user[0].specificAddress);
-                })
-                .catch((error) => {
-                    if (error.response.status === 401) navigate('/login');
-                });
+            (async () => {
+                try {
+                    const res = await request.get(`/Admin/find-user/${userIdEdit}`);
+                    const user = res.user[0]; 
+            
+                    // Cập nhật các state tương ứng
+                    setUsername(user.username);
+                    setFullName(user.fullName);
+                    setEmail(user.email);
+                    setPhone(user.phone);
+                    setRole(user.role);
+                    setCity(user.city);
+                    setDistrict(user.district);
+                    setWard(user.ward);
+                    setSpecificAddress(user.specificAddress);
+                } catch (error) {
+                    if (error.response && error.response.status === 401) {
+                        navigate('/login');
+                    }
+                }
+            })();
         }
-    }, [userIdEdit, token, navigate]);
-
+    }, [userIdEdit, navigate]);
 
     const handlePageClick = (event) => {
-        let currenPage = event.selected + 1;
-        getUsers(currenPage);
-        setCurrenPageProduct(currenPage);
+        let currentPage = event.selected + 1;
+        getUsers(currentPage);
+        setCurrentPageProduct(currentPage);
     };
 
     return (
@@ -259,10 +315,7 @@ function Users() {
                     <div className={cx('action-container')}>
                         <div className={cx('actions-wrap')}>
                             <div className={cx('action-list')}>
-                                <button
-                                    className={cx('btn', 'btn--primary', 'mr-10')}
-                                    onClick={() => {}}
-                                >
+                                <button className={cx('btn', 'btn--primary', 'mr-10')} onClick={() => {}}>
                                     Lọc
                                 </button>
                                 <button
@@ -356,7 +409,7 @@ function Users() {
                                                     <div
                                                         className={cx('btn-edit')}
                                                         data-id={result.userId}
-                                                        onClick={handlecheckedBtnEdit}
+                                                        onClick={handleCheckedBtnEdit}
                                                     >
                                                         Sửa
                                                     </div>
@@ -438,7 +491,6 @@ function Users() {
                                     >
                                         Tiếp tục
                                     </button>
-                                    
                                 </div>
                             </div>
                         </div>
@@ -446,7 +498,7 @@ function Users() {
                 </div>
             )}
 
-            {(checkedBtnEdit) && (
+            {checkedBtnEdit && (
                 <div className={cx('modal')}>
                     <div className={cx('modal__overlay')}></div>
                     <div className={cx('modal__body')}>
@@ -463,7 +515,7 @@ function Users() {
                                             name="fullname"
                                             id="fullname"
                                             value={fullName}
-                                            onChange={(e) => setfullName(e.target.value)}
+                                            onChange={(e) => setFullName(e.target.value)}
                                         />
                                     </div>
 
@@ -577,7 +629,7 @@ function Users() {
                                             if (checkedBtnEdit) {
                                                 setCheckedBtnEdit(!checkedBtnEdit);
                                                 setUsername(undefined);
-                                                setfullName(undefined);
+                                                setFullName(undefined);
                                                 setEmail(undefined);
                                                 setPhone(undefined);
                                                 setRole(undefined);
@@ -588,7 +640,7 @@ function Users() {
                                             } else {
                                                 setCheckedBtnAdd(!checkedBtnAdd);
                                                 setUsername(undefined);
-                                                setfullName(undefined);
+                                                setFullName(undefined);
                                                 setEmail(undefined);
                                                 setPhone(undefined);
                                                 setRole(undefined);

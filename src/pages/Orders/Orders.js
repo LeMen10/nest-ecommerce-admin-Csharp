@@ -1,78 +1,57 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useState, useEffect } from 'react';
 import ReactPaginate from 'react-paginate';
 import className from 'classnames/bind';
 import styles from './Orders.module.scss';
 import 'react-toastify/dist/ReactToastify.css';
 import { useNavigate } from 'react-router-dom';
+import * as request from '~/utils/request';
 
 const cx = className.bind(styles);
 
 function Orders() {
-    const token = Cookies.get('tokenAdmin');
     const navigate = useNavigate();
     const [orderList, setOrderList] = useState([]);
     const [pageCount, setPageCount] = useState('');
 
     const postsPerPage = 12;
 
-    const getOrder = (currenPage) => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-orders?page=${currenPage}&limit=${postsPerPage}`)
-            .then((res) => {
-                setOrderList(res.data.orderDetails);
-                setPageCount(res.data.countProduct);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+    const getOrder = async (currentPage) => {
+        try {
+            const res = await request.get(`/Admin/get-orders?page=${currentPage}&limit=${postsPerPage}`);
+            setOrderList(res.orderDetails);
+            setPageCount(res.countProduct);
+        } catch (error) {
+            if (error.response.status === 401) navigate('/login');
+        }
     };
 
-    const updateStatusOrder = (event, dataId) => {
+    const updateStatusOrder = async (event, dataId) => {
         const status = event.target.value;
         const orderDetailId = dataId;
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                cookies: token,
-            },
-        });
-
-        api.put(`${process.env.REACT_APP_BASE_URL}/Admin/update-status-order/${orderDetailId}`, { status })
-            .then((res) => {
-                getOrder(1);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+        console.log(status)
+        try {
+            await request.put(`/Admin/update-status-order/${orderDetailId}`, { status });
+            getOrder(1);
+        } catch (error) {
+            if (error.response.status === 401) navigate('/login');
+        }
     };
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-orders?page=1&limit=${postsPerPage}`)
-            .then((res) => {
-                setOrderList(res.data.orderDetails);
-                setPageCount(res.data.countProduct);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
+        const fetchApi = async () => {
+            try {
+                const res = await request.get(`/Admin/get-orders?page=1&limit=${postsPerPage}`);
+                console.log(res)
+                setOrderList(res.orderDetails);
+                setPageCount(res.countProduct);
+            } catch (error) { if (error.response.status === 401) navigate('/login'); }
+        };
+        fetchApi();
+    }, [navigate]);
 
     const handlePageClick = (event) => {
-        let currenPage = event.selected + 1;
-        getOrder(currenPage);
+        let currentPage = event.selected + 1;
+        getOrder(currentPage);
     };
 
     return (
@@ -80,6 +59,7 @@ function Orders() {
             <div className={cx('mt-4', 'mb-4', 'pd-top-10px')}>
                 <div className={cx('table-wrap', 'mt-4')}>
                     <div className={cx('table-container')}>
+                        {orderList.length > 0 ? (
                         <table className={cx('table')}>
                             <thead>
                                 <tr>
@@ -107,7 +87,7 @@ function Orders() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {orderList.length > 0 ? (
+                                {orderList.length > 0 && (
                                     orderList.map((result) => (
                                         <tr key={result.orderDetailId}>
                                             <td>
@@ -143,15 +123,15 @@ function Orders() {
                                             </td>
                                         </tr>
                                     ))
-                                ) : (
+                                )}
+                            </tbody>
+                        </table>): (
                                     <tr>
                                         <td colSpan="5" className={cx('text-center')}>
                                             Chưa có đơn hàng nào để xử lý. Hãy kiên nhẫn chờ nhá !!!
                                         </td>
                                     </tr>
                                 )}
-                            </tbody>
-                        </table>
                     </div>
                 </div>
                 {pageCount && (
@@ -175,7 +155,6 @@ function Orders() {
                     </div>
                 )}
             </div>
-           
         </div>
     );
 }

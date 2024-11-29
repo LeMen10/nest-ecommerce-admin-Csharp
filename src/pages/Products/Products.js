@@ -1,5 +1,3 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useState, useEffect } from 'react';
 import ReactPaginate from 'react-paginate';
 import { useNavigate } from 'react-router-dom';
@@ -10,11 +8,11 @@ import styles from './Products.module.scss';
 import Image from '~/components/Image';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import * as request from '~/utils/request';
 
 const cx = className.bind(styles);
 
 function Products() {
-    const token = Cookies.get('tokenAdmin');
     const [products, setProducts] = useState([]);
     const [checkedItems, setCheckedItems] = useState([]);
     const [checkedDelete, setCheckedDelete] = useState(false);
@@ -23,19 +21,18 @@ function Products() {
     const [productIdDelete, setProductIdDelete] = useState();
     const [productIdEdit, setProductIdEdit] = useState();
     const [countDelete, setCountDelete] = useState();
-    const [imgPrevirew, setImgPreview] = useState();
+    const [imgPreview, setImgPreview] = useState();
     const [pageCount, setPageCount] = useState();
-
     const [titleProduct, setTitleProduct] = useState('');
     const [priceProduct, setPriceProduct] = useState();
     const [cateProduct, setCateProduct] = useState();
     const [detailProduct, setDetailProduct] = useState('');
     const [imgProduct, setImgProduct] = useState('');
     const [categories, setCategories] = useState();
-    const [currenPageProduct, setCurrenPageProduct] = useState();
+    const [currentPageProduct, setCurrentPageProduct] = useState();
     const navigate = useNavigate();
 
-    const postsPerPage = 8;
+    const postsPerPage = 5;
 
     const handleCheckDelete = (event) => {
         const targetId = event.target.dataset.id;
@@ -51,103 +48,68 @@ function Products() {
 
     useEffect(() => {
         if (productIdEdit) {
-            const api = axios.create({
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            api.get(`${process.env.REACT_APP_BASE_URL}/Admin/find-product/${productIdEdit}`)
-                .then((res) => {
-                    var product = res.data.product;
+            const fetchApi = async () => {
+                try {
+                    const res = await request.get(`/Admin/find-product/${productIdEdit}`);
+                    var product = res.product;
                     setTitleProduct(product[0].title);
                     setPriceProduct(product[0].price);
                     setCateProduct(product[0].categoryId);
                     setDetailProduct(product[0].detail);
                     setImgPreview(product[0].image);
-                })
-                .catch((error) => {
+                } catch (error) {
                     if (error.response.status === 401) navigate('/login');
-                });
+                }
+            };
+            fetchApi();
         }
-    }, [productIdEdit, token, navigate]);
+    }, [productIdEdit, navigate]);
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-products?page=1&limit=${postsPerPage}`)
-            .then((res) => {
-                setProducts(res.data.products);
-                setPageCount(res.data.countProduct);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
+        const fetchApi = async () => {
+            try {
+                const res = await request.get(`/Admin/get-products?page=1&limit=${postsPerPage}`);
+                console.log(res)
+                setProducts(res.products);
+                setPageCount(res.countProduct);
+            } catch (error) { if (error.response.status === 401) navigate('/login'); }
+        };
+        fetchApi();
+    }, [navigate]);
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        const fetchApi = async () => {
+            try {
+                const res = await request.get(`/Shop/get-category`);
+                setCategories(res.categories);
+            } catch (error) { if (error.response.status === 401) navigate('/login'); }
+        };
+        fetchApi();
+    }, [navigate]);
 
-        api.get(`${process.env.REACT_APP_BASE_URL}/Shop/get-category`)
-            .then((res) => {
-                setCategories(res.data.categories);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
-
-    const getProducts = (currenPage) => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-products?page=${currenPage}&limit=${postsPerPage}`)
-            .then((res) => {
-                setProducts(res.data.products);
-                setPageCount(res.data.countProduct);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+    const getProducts = async (currentPage) => {
+        try {
+            const res = await request.get(`/Admin/get-products?page=${currentPage}&limit=${postsPerPage}`);
+            setProducts(res.products);
+            setPageCount(res.countProduct);
+        } catch (error) { if (error.response.status === 401) navigate('/login'); }
     };
 
     const handlePageClick = (event) => {
-        let currenPage = event.selected + 1;
-        getProducts(currenPage);
-        setCurrenPageProduct(currenPage);
+        let currentPage = event.selected + 1;
+        getProducts(currentPage);
+        setCurrentPageProduct(currentPage);
     };
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/get-count-product-deleted`)
-            .then((res) => {
-                setCountDelete(res.data.count);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [products, token, navigate]);
+        const fetchApi = async () => {
+            try {
+                const res = await request.get(`/Admin/get-count-product-deleted`);
+                setCountDelete(res.count);
+            } catch (error) { if (error.response.status === 401) navigate('/login'); }
+        };
+        fetchApi();
+    }, [products, navigate]);
 
     const handleChange = (event) => {
         const item = event.target.value;
@@ -173,116 +135,107 @@ function Products() {
         }
     };
 
-    const handleDeleteProduct = () => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.delete(`${process.env.REACT_APP_BASE_URL}/Admin/delete-product/${productIdDelete}`)
-            .then((res) => {
-                setCheckedDelete(!checkedDelete);
-                getProducts(currenPageProduct || 1);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+    const handleDeleteProduct = async () => {
+        try {
+            await request.delete_method(`/Admin/delete-product/${productIdDelete}`);
+            setCheckedDelete(!checkedDelete);
+            getProducts(currentPageProduct || 1);
+            console.log(products)
+        } catch (error) { if (error.response.status === 401) navigate('/login'); }
     };
 
-    const handleDeleteMultipleProduct = () => {
-        var dataIds = checkedItems;
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.delete(`${process.env.REACT_APP_BASE_URL}/Admin/delete-multiple-products`, { data: dataIds })
-            .then((res) => {
-                setCheckedDelete(!checkedDelete);
-                getProducts(currenPageProduct || 1);
-                setCheckedItems([]);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+    const handleDeleteMultipleProduct = async () => {
+        let dataIds = checkedItems;
+        try {
+            await request.delete_method(`/Admin/delete-multiple-products`, { data: dataIds });
+            setCheckedDelete(!checkedDelete);
+            getProducts(currentPageProduct || 1);
+            setCheckedItems([]);
+        } catch (error) { if (error.response.status === 401) navigate('/login'); }
     };
 
-    const handleAddProduct = () => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.post(`${process.env.REACT_APP_BASE_URL}/Admin/add-product`, {
-            title: titleProduct,
-            price: priceProduct,
-            detail: detailProduct,
-            categoryId: cateProduct,
-            image: imgProduct.split('\\').pop(),
-        })
-            .then((res) => {
-                setCheckedBtnAdd(!checkedBtnAdd);
-                getProducts(currenPageProduct || 1);
-                setTitleProduct(undefined);
-                setPriceProduct(undefined);
-                setCateProduct(undefined);
-                setDetailProduct(undefined);
-                setImgProduct(undefined);
-                setImgPreview(undefined);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
+    const handleAddProduct = async () => {
+        try {
+            await request.post(`/Admin/add-product`, {
+                title: titleProduct,
+                price: priceProduct,
+                detail: detailProduct,
+                categoryId: cateProduct,
+                image: imgProduct.split('\\').pop(),
             });
-    };
-
-    const handleEditProduct = () => {
-        var image = '';
-        if (imgProduct) {
-            image = imgProduct.split('\\').pop();
-        } else {
-            image = imgPrevirew.split('/')[4];
+            setCheckedBtnAdd(!checkedBtnAdd);
+            getProducts(currentPageProduct || 1);
+            setTitleProduct(undefined);
+            setPriceProduct(undefined);
+            setCateProduct(undefined);
+            setDetailProduct(undefined);
+            setImgProduct(undefined);
+            setImgPreview(undefined);
+        } catch (error) { 
+            console.log(error)
+            if (error.response.status === 401) navigate('/login'); 
         }
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+    };
 
-        api.put(`${process.env.REACT_APP_BASE_URL}/Admin/edit-product/${productIdEdit}`, {
-            title: titleProduct,
-            price: priceProduct,
-            categoryId: cateProduct,
-            detail: detailProduct,
-            image,
-        })
-            .then((res) => {
-                setCheckedBtnEdit(!checkedBtnEdit);
-                getProducts(currenPageProduct || 1);
-                setTitleProduct(undefined);
-                setPriceProduct(undefined);
-                setCateProduct(undefined);
-                setDetailProduct(undefined);
-                setImgProduct(undefined);
-                setImgPreview(undefined);
-                setProductIdEdit(undefined);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
+    const handleEditProduct = async () => {
+        let image = '';
+        if (imgProduct) image = imgProduct.split('\\').pop();
+        else image = imgPreview.split('/')[4];
+
+        try {
+            await request.put(`/Admin/edit-product/${productIdEdit}`, {
+                title: titleProduct,
+                price: priceProduct,
+                categoryId: cateProduct,
+                detail: detailProduct,
+                image,
             });
+            setCheckedBtnEdit(!checkedBtnEdit);
+            getProducts(currentPageProduct || 1);
+            setTitleProduct(undefined);
+            setPriceProduct(undefined);
+            setCateProduct(undefined);
+            setDetailProduct(undefined);
+            setImgProduct(undefined);
+            setImgPreview(undefined);
+            setProductIdEdit(undefined);
+        } catch (error) { if (error.response.status === 401) navigate('/login'); }
+
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.put(`${process.env.REACT_APP_BASE_URL}/Admin/edit-product/${productIdEdit}`, {
+        //     title: titleProduct,
+        //     price: priceProduct,
+        //     categoryId: cateProduct,
+        //     detail: detailProduct,
+        //     image,
+        // })
+        //     .then((res) => {
+        //         setCheckedBtnEdit(!checkedBtnEdit);
+        //         getProducts(currentPageProduct || 1);
+        //         setTitleProduct(undefined);
+        //         setPriceProduct(undefined);
+        //         setCateProduct(undefined);
+        //         setDetailProduct(undefined);
+        //         setImgProduct(undefined);
+        //         setImgPreview(undefined);
+        //         setProductIdEdit(undefined);
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
     };
 
     useEffect(() => {
         return () => {
-            imgPrevirew && URL.revokeObjectURL(imgPrevirew.preview || imgPrevirew);
+            imgPreview && URL.revokeObjectURL(imgPreview.preview || imgPreview);
         };
-    }, [imgPrevirew]);
+    }, [imgPreview]);
 
     const handlePreviewImg = (event) => {
         const file = event.target.files[0];
@@ -380,7 +333,7 @@ function Products() {
                                                 </div>
                                             </td>
                                             <td>
-                                                <Image style={{ width: '120px' }} src={result.image} alt="" />
+                                                <Image style={{ width: '120px' }} src={`http://localhost:13395/${result.image}`} alt="" />
                                                 <p>{result.title}</p>
                                             </td>
                                             <td
@@ -558,10 +511,10 @@ function Products() {
                                             />
                                             <label htmlFor="img">Choose a file</label>
                                         </div>
-                                        {imgPrevirew && (
+                                        {imgPreview && (
                                             <Image
                                                 style={{ width: '120px' }}
-                                                src={imgPrevirew.preview || imgPrevirew}
+                                                src={`http://localhost:13395/${imgPreview.preview || imgPreview}`}
                                                 alt=""
                                             />
                                         )}
@@ -610,11 +563,8 @@ function Products() {
                                     </Link>
                                     <button
                                         onClick={() => {
-                                            if (checkedBtnEdit) {
-                                                handleEditProduct();
-                                            } else {
-                                                handleAddProduct();
-                                            }
+                                            if (checkedBtnEdit) handleEditProduct();
+                                            else handleAddProduct();
                                         }}
                                         className={cx('btn', 'btn--primary', 'view-cart')}
                                     >
