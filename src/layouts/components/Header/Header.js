@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import axios from 'axios';
 import Cookies from 'js-cookie';
 import className from 'classnames/bind';
 import styles from './Header.module.scss';
@@ -8,34 +7,45 @@ import { Link } from 'react-router-dom';
 import images from '~/assets/images/images';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import * as request from '~/utils/request';
 
 const cx = className.bind(styles);
 
 function Header() {
-    const token = Cookies.get('tokenAdmin');
     const navigate = useNavigate();
     const [username, setUsername] = useState();
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
+        (async () => {
+            try {
+                const res = await request.get(`/Account/get-username`);
+                setUsername(res.username);
+            } catch (error) { 
+                if (error.response && error.response.status === 401) {
+                    navigate('/login'); 
+                }
+            }
+        })();
 
-        api.get(`${process.env.REACT_APP_BASE_URL}/Account/get-username`)
-            .then((res) => {
-                setUsername(res.data.username);
-                console.log(res)
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
+        // const api = axios.create({
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //         Authorization: `Bearer ${token}`,
+        //     },
+        // });
+
+        // api.get(`${process.env.REACT_APP_BASE_URL}/Account/get-username`)
+        //     .then((res) => {
+        //         setUsername(res.data.username);
+        //         console.log(res)
+        //     })
+        //     .catch((error) => {
+        //         if (error.response.status === 401) navigate('/login');
+        //     });
+    }, [navigate]);
 
     const handleLogout = () => {
-        Cookies.remove('tokenAdmin');
+        Cookies.remove('token_admin');
         setUsername(undefined);
     };
 

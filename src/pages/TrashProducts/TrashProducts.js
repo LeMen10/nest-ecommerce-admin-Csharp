@@ -1,5 +1,3 @@
-import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
@@ -7,72 +5,45 @@ import ReactPaginate from 'react-paginate';
 import className from 'classnames/bind';
 import styles from './TrashProducts.module.scss';
 import Image from '~/components/Image';
+import * as request from '~/utils/request';
 
 const cx = className.bind(styles);
 
 function TrashProducts() {
     const navigate = useNavigate();
-    const token = Cookies.get('tokenAdmin');
     const [products, setProducts] = useState([]);
     const [checkedItems, setCheckedItems] = useState([]);
     const [pageCount, setPageCount] = useState();
-    const [currenPageProduct, setCurrenPageProduct] = useState();
+    const [currentPageProduct, setCurrentPageProduct] = useState();
 
     const postsPerPage = 8;
 
-    const handleRestoreMultipleProduct = () => {
+    const handleRestoreMultipleProduct = async () => {
         var dataIds = checkedItems;
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.put(`${process.env.REACT_APP_BASE_URL}/Admin/restore-multiple-products`, dataIds )
-            .then((res) => {
-                getProducts(currenPageProduct || 1);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+        try {
+            await request.put(`/Admin/restore-multiple-products`, dataIds);
+            getProducts(currentPageProduct || 1);
+        } catch (error) { if (error.response.status === 401) navigate('/login'); }
     };
 
-    const handleRestoreProduct = (event) => {
+    const handleRestoreProduct = async (event) => {
         const id = event.target.dataset.id;
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.put(`${process.env.REACT_APP_BASE_URL}/Admin/restore-product/${id}`)
-            .then((res) => {
-                getProducts(currenPageProduct || 1);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+        try {
+            await request.put(`/Admin/restore-product/${id}`);
+            getProducts(currentPageProduct || 1);
+        } catch (error) { if (error.response.status === 401) navigate('/login'); }
     };
 
     useEffect(() => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/trash-products?page=1&limit=${postsPerPage}`)
-            .then((res) => {
-                setProducts(res.data.products);
-                setPageCount(res.data.countProduct);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
-    }, [token, navigate]);
+        const fetchApi = async () => {
+            try {
+                const res = await request.get(`/Admin/trash-products?page=1&limit=${postsPerPage}`);
+                setProducts(res.products);
+                setPageCount(res.countProduct);
+            } catch (error) { if (error.response.status === 401) navigate('/login'); }
+        };
+        fetchApi();
+    }, [navigate]);
 
     const handleChange = (event) => {
         const item = event.target.value;
@@ -98,28 +69,20 @@ function TrashProducts() {
         }
     };
 
-    const getProducts = (currenPage) => {
-        const api = axios.create({
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
-        api.get(`${process.env.REACT_APP_BASE_URL}/Admin/trash-products?page=${currenPage}&limit=${postsPerPage}`)
-            .then((res) => {
-                setProducts(res.data.products);
-                setPageCount(res.data.countProduct);
-            })
-            .catch((error) => {
-                if (error.response.status === 401) navigate('/login');
-            });
+    const getProducts = async (currentPage) => {
+        try {
+            const res = await request.get(`/Admin/trash-products?page=${currentPage}&limit=${postsPerPage}`);
+            setProducts(res.products);
+            setPageCount(res.countProduct);
+        } catch (error) {
+            if (error.response.status === 401) navigate('/login');
+        }
     };
 
     const handlePageClick = (event) => {
-        let currenPage = event.selected + 1;
-        getProducts(currenPage);
-        setCurrenPageProduct(currenPage);
+        let currentPage = event.selected + 1;
+        getProducts(currentPage);
+        setCurrentPageProduct(currentPage);
     };
 
     return (

@@ -13,6 +13,7 @@ const cx = className.bind(styles);
 function Login() {
     const [username, setUserName] = useState('');
     const [password, setPassword] = useState('');
+    const expires = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
 
     const navigate = useNavigate();
 
@@ -23,7 +24,7 @@ function Login() {
                 password,
             })
             .then((res) => {
-                Cookies.set('tokenAdmin', res.data.accessToken);
+                Cookies.set('token_admin', res.data.accessToken, { expires });
                 navigate(`/`);
             })
             .catch((error) => {
@@ -38,7 +39,7 @@ function Login() {
                         progress: undefined,
                         theme: 'light',
                     });
-                };
+                }
             });
     };
 
