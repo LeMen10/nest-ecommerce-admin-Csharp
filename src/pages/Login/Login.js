@@ -26,6 +26,7 @@ function Login() {
             .then((res) => {
                 Cookies.set('token_admin', res.data.accessToken, { expires });
                 navigate(`/`);
+                window.location.reload();
             })
             .catch((error) => {
                 if (error.response.status === 404) {

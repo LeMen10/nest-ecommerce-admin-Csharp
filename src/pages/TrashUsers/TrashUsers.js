@@ -14,7 +14,7 @@ function TrashUsers() {
     const [checkedItems, setCheckedItems] = useState([]);
     const [pageCount, setPageCount] = useState();
     const [currentPageProduct, setCurrentPageProduct] = useState();
-
+    console.log(users)
     const postsPerPage = 10;
 
     const handleRestoreMultipleUser = async () => {
@@ -68,28 +68,12 @@ function TrashUsers() {
         (async () => {
             try {
                 const res = await request.get(`/Admin/trash-users?page=1&limit=${postsPerPage}`);
-                setUsers(res.data.users);
-                setPageCount(res.data.countUser );
+                setUsers(res.users);
+                setPageCount(res.countUser );
             } catch (error) { 
                 if (error.response && error.response.status === 401) { navigate('/login'); }
             }
         })();
-
-        // const api = axios.create({
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         Authorization: `Bearer ${token}`,
-        //     },
-        // });
-
-        // api.get(`${process.env.REACT_APP_BASE_URL}/Admin/trash-users?page=1&limit=${postsPerPage}`)
-        //     .then((res) => {
-        //         setUsers(res.data.users);
-        //         setPageCount(res.data.countUser);
-        //     })
-        //     .catch((error) => {
-        //         if (error.response.status === 401) navigate('/login');
-        //     });
     }, [navigate]);
 
     const handleChange = (event) => {
@@ -122,22 +106,6 @@ function TrashUsers() {
             setUsers(res.users);
             setPageCount(res.countUser);
         } catch (error) {if (error.response.status === 401) navigate('/login');}
-
-        // const api = axios.create({
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         Authorization: `Bearer ${token}`,
-        //     },
-        // });
-
-        // api.get(`${process.env.REACT_APP_BASE_URL}/Admin/trash-users?page=${currentPage}&limit=${postsPerPage}`)
-        //     .then((res) => {
-        //         setUsers(res.data.users);
-        //         setPageCount(res.data.countUser);
-        //     })
-        //     .catch((error) => {
-        //         if (error.response.status === 401) navigate('/login');
-        //     });
     };
 
     const handlePageClick = (event) => {
@@ -224,9 +192,9 @@ function TrashUsers() {
                                             <td
                                                 style={{ textAlign: 'center' }}
                                                 className={cx('product-total')}
-                                                data-total={result._id}
+                                                data-total={result.userId}
                                             >
-                                                {result.rule}
+                                                {result.role}
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'center' }}>
