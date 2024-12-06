@@ -7,18 +7,29 @@ import styles from './Home.module.scss';
 import { Line } from 'react-chartjs-2';
 // import { Chart } from 'chart.js/auto';
 import * as request from '~/utils/request';
-
 import { BankCartIcon, CartAdminIcon, OrderProcessingIcon, RoudedIcon, StackIcon, TickIcon } from '~/components/Icons';
+import {
+    Chart,
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+Chart.register(LineController, LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend);
+
 
 const cx = className.bind(styles);
 
 function Home() {
     const navigate = useNavigate();
-    const [allOrder, setAllOrder] = useState();
-    const [processingOrder, setProcessingOrder] = useState();
-    const [deliveringOrder, setDeliveringOrder] = useState();
-    const [completeOrder, setCompleteOrder] = useState();
-    const [orderDetailCountsPerMonth, setOrderDetailCountsPerMonth] = useState();
+    const [allOrder, setAllOrder] = useState(0);
+    const [processingOrder, setProcessingOrder] = useState(0);
+    const [deliveringOrder, setDeliveringOrder] = useState(0);
+    const [completeOrder, setCompleteOrder] = useState(0);
+    const [orderDetailCountsPerMonth, setOrderDetailCountsPerMonth] = useState([]);
     const months = [
         'Tháng 1',
         'Tháng 2',
@@ -38,7 +49,7 @@ function Home() {
         datasets: [
             {
                 label: 'Số đơn',
-                data: orderDetailCountsPerMonth,
+                data: orderDetailCountsPerMonth.length > 0 ? orderDetailCountsPerMonth : Array(12).fill(0),
                 fill: false,
                 borderColor: '#5ece98',
                 tension: 0.1,
@@ -47,10 +58,16 @@ function Home() {
     };
 
     const options = {
+        responsive: true,
         scales: {
             y: {
-                type: 'linear',
-                position: 'left',
+                beginAtZero: true,
+            },
+        },
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top',
             },
         },
     };
@@ -197,10 +214,10 @@ function Home() {
                         </div>
                     </div>
                 </div>
-                {/* <div className={cx('order-statistics')}>
+                <div className={cx('order-statistics')}>
                     <p className={cx('order-statistics-title')}>Thống kê đơn hàng</p>
                     <Line data={data} options={options} />
-                </div> */}
+                </div>
             </div>
         </div>
     );

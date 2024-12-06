@@ -149,7 +149,7 @@ function TrashProducts() {
                                                 </div>
                                             </td>
                                             <td>
-                                                <Image style={{ width: '120px' }} src={result.image} alt="" />
+                                                <Image style={{ width: '120px' }} src={`http://localhost:13395/${result.image}`} alt="" />
                                                 <p>{result.title}</p>
                                             </td>
                                             <td

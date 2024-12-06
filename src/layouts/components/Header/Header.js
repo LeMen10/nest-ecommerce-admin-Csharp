@@ -26,27 +26,13 @@ function Header() {
                 }
             }
         })();
-
-        // const api = axios.create({
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         Authorization: `Bearer ${token}`,
-        //     },
-        // });
-
-        // api.get(`${process.env.REACT_APP_BASE_URL}/Account/get-username`)
-        //     .then((res) => {
-        //         setUsername(res.data.username);
-        //         console.log(res)
-        //     })
-        //     .catch((error) => {
-        //         if (error.response.status === 401) navigate('/login');
-        //     });
     }, [navigate]);
 
     const handleLogout = () => {
         Cookies.remove('token_admin');
         setUsername(undefined);
+        navigate('/login')
+        window.location.reload();
     };
 
     return (
